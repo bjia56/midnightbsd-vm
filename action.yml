@@ -65,7 +65,7 @@ runs:
         mkdir -p ~/.local/bin
         cat > ~/.local/bin/midnightbsd << EOL
         #!/usr/bin/env sh
-        ssh root@midnightbsd sh -l \$1
+        ssh root@midnightbsd tcsh -l \$1
         EOL
         chmod +x ~/.local/bin/midnightbsd
 
@@ -93,6 +93,6 @@ runs:
       working-directory: ${{ github.action_path }}
       run: |
         # Run commands
-        cat <<- "MIDNIGHTBSDSCRIPT" | ssh root@midnightbsd sh
+        cat <<- "MIDNIGHTBSDSCRIPT" | ssh root@midnightbsd tcsh -l
         ${{ inputs.run }}
         MIDNIGHTBSDSCRIPT
