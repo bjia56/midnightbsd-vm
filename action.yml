@@ -93,6 +93,6 @@ runs:
       working-directory: ${{ github.action_path }}
       run: |
         # Run commands
-        cat <<- "MIDNIGHTBSDSCRIPT" | ssh root@midnightbsd /bin/bash
+        cat <<- "MIDNIGHTBSDSCRIPT" | ssh root@midnightbsd sh
         ${{ inputs.commands }}
         MIDNIGHTBSDSCRIPT
