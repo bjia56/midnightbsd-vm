@@ -94,5 +94,5 @@ runs:
       run: |
         # Run commands
         cat <<- "MIDNIGHTBSDSCRIPT" | ssh root@midnightbsd sh
-        ${{ inputs.commands }}
+        ${{ inputs.run }}
         MIDNIGHTBSDSCRIPT
