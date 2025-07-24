@@ -1,0 +1,98 @@
+name: MidnightBSD VM
+description: Action to execute commands within a MidnightBSD VM running on QEMU
+author: Brett Jia
+
+inputs:
+  run:
+    description: Commands to run in the VM
+    required: true
+    default: uname -a
+
+runs:
+  using: composite
+  steps:
+    - name: Install dependencies
+      shell: bash
+      run: |
+        # Install dependencies
+        sudo apt-get update -qq > /dev/null
+        sudo apt-get install -y -qq qemu-system-x86 xvfb ssh wget > /dev/null
+        qemu-system-x86_64 --version
+
+    - name: Download disk image and keys
+      shell: bash
+      run: |
+        # Download disk image and keys
+        TAG=midnightbsd-3.2.3-0
+
+        wget -q https://github.com/bjia56/midnightbsd-vm/releases/download/$TAG/midnightbsd.img.xz
+        xz -d midnightbsd.img.xz
+
+        mkdir -p /tmp/midnightbsd.ssh
+        chmod 700 /tmp/midnightbsd.ssh
+        wget -q -O /tmp/midnightbsd.ssh/id_rsa https://github.com/bjia56/midnightbsd-vm/releases/download/$TAG/id_rsa
+        chmod 400 /tmp/midnightbsd.ssh/id_rsa
+        wget -q -O /tmp/midnightbsd.ssh/id_rsa.pub https://github.com/bjia56/midnightbsd-vm/releases/download/$TAG/id_rsa.pub
+        chmod 644 /tmp/midnightbsd.ssh/id_rsa.pub
+
+    - name: Boot VM
+      shell: bash
+      run: |
+        # Boot VM
+        export XDG_RUNTIME_DIR=$(mktemp -d)
+        xvfb-run qemu-system-x86_64 -enable-kvm -boot c -m 4096 -smp 4 -hda midnightbsd.img -no-reboot -device e1000,netdev=net0 -netdev user,id=net0,hostfwd=tcp::5555-:22
+
+    - name: Setup ssh
+      shell: bash
+      run: |
+        # Setup ssh
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        cat > ~/.ssh/config <<EOL
+        Host midnightbsd
+            User root
+            HostName localhost
+            Port 5555
+            IdentityFile /tmp/midnightbsd.ssh/id_rsa
+            StrictHostKeyChecking no
+        EOL
+        chmod 600 ~/.ssh/config
+
+    - name: Install custom shell
+      shell: bash
+      run: |
+        # Install custom shell
+        mkdir -p ~/.local/bin
+        cat > ~/.local/bin/midnightbsd << EOL
+        #!/usr/bin/env sh
+        ssh root@midnightbsd sh -l \$1
+        EOL
+        chmod +x ~/.local/bin/midnightbsd
+
+    - name: Wait for VM
+      shell: bash
+      run: |
+        # Wait for VM
+        wait_for_ssh() {
+          local HOST="midnightbsd"
+          local INTERVAL=10
+          while true; do
+            if ! ssh -o ConnectTimeout=5 "root@$HOST" date &> /dev/null ; then
+              echo "Waiting for SSH to become available for root@$HOST"
+              sleep $INTERVAL
+            else
+              echo "SSH is now available on $HOST."
+              return 0
+            fi
+          done
+        }
+        wait_for_ssh
+
+    - name: Run commands
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |
+        # Run commands
+        cat <<- "MIDNIGHTBSDSCRIPT" | ssh root@midnightbsd /bin/bash
+        ${{ inputs.commands }}
+        MIDNIGHTBSDSCRIPT
