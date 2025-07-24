@@ -65,7 +65,7 @@ runs:
         mkdir -p ~/.local/bin
         cat > ~/.local/bin/midnightbsd << EOL
         #!/usr/bin/env sh
-        ssh root@midnightbsd tcsh -l \$1
+        ssh root@midnightbsd tcsh -l<\$1
         EOL
         chmod +x ~/.local/bin/midnightbsd
 
