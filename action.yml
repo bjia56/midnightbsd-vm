@@ -40,7 +40,7 @@ runs:
       run: |
         # Boot VM
         export XDG_RUNTIME_DIR=$(mktemp -d)
-        xvfb-run sudo qemu-system-x86_64 -enable-kvm -boot c -m 4096 -smp 4 -hda midnightbsd.img -no-reboot -device e1000,netdev=net0 -netdev user,id=net0,hostfwd=tcp::5555-:22
+        xvfb-run sudo qemu-system-x86_64 -enable-kvm -boot c -m 4096 -smp 4 -hda midnightbsd.img -no-reboot -device e1000,netdev=net0 -netdev user,id=net0,hostfwd=tcp::5555-:22 &
 
     - name: Setup ssh
       shell: bash
